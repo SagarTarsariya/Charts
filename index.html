@@ -1,0 +1,102 @@
+```html
+   <!DOCTYPE html>
+   <html lang="en">
+   <head>
+       <meta charset="UTF-8">
+       <meta name="viewport" content="width=device-width, initial-scale=1.0">
+       <title>Chart Viewer</title>
+       <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+       <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+       <style>
+           body {
+               font-family: Arial, sans-serif;
+               margin: 20px;
+               text-align: center;
+               background-color: #f0f0f0;
+           }
+           canvas {
+               max-width: 600px;
+               margin: 20px auto;
+               background-color: #fff;
+               padding: 10px;
+               border-radius: 8px;
+           }
+       </style>
+   </head>
+   <body>
+       <h1>Chart Viewer</h1>
+       <p>View charts generated from your data source.</p>
+       <canvas id="barChart"></canvas>
+       <canvas id="lineChart"></canvas>
+
+       <script>
+           // Function to fetch and parse CSV data
+           async function loadData() {
+               try {
+                   const response = await fetch('c:/Sagar/BackTestResult/ATR/ATR_Buying_Strategy.csv'); // Update to your CSV filename
+                   if (!response.ok) throw new Error('Failed to load CSV');
+                   const text = await response.text();
+                   return Papa.parse(text, { header: true, dynamicTyping: true }).data;
+               } catch (error) {
+                   console.error('Error loading data:', error);
+                   alert('Error loading data. Please ensure the CSV file is available.');
+                   return [];
+               }
+           }
+
+           // Function to create charts
+           async function createCharts() {
+               const data = await loadData();
+               if (data.length === 0) return;
+
+               // Update these to match your CSV column names
+               const labels = data.map(row => row.Expiry);
+               const values1 = data.map(row => row.PNL);
+               const values2 = data.map(row => row.TotalPNL);
+
+               // Bar Chart
+               new Chart(document.getElementById('barChart').getContext('2d'), {
+                   type: 'bar',
+                   data: {
+                       labels: labels,
+                       datasets: [{
+                           label: 'PNL', // Update label to match your data
+                           data: values1,
+                           backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                           borderColor: 'rgba(54, 162, 235, 1)',
+                           borderWidth: 1
+                       }]
+                   },
+                   options: {
+                       scales: { y: { beginAtZero: true } },
+                       responsive: true
+                   }
+               });
+
+               // Line Chart
+               new Chart(document.getElementById('lineChart').getContext('2d'), {
+                   type: 'line',
+                   data: {
+                       labels: labels,
+                       datasets: [{
+                           label: 'Total PNL', // Update label to match your data
+                           data: values2,
+                           borderColor: 'rgba(255, 99, 132, 1)',
+                           backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                           fill: true
+                       }]
+                   },
+                   options: {
+                       scales: { y: { beginAtZero: true } },
+                       responsive: true
+                   }
+               });
+           }
+
+           // Initialize charts
+           createCharts();
+       </script>
+   </body>
+   </html>
+
+
