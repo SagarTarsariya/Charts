@@ -56,8 +56,8 @@
 
             // Use column names from your CSV (verify these match exactly)
             const labels = data.map(row => row.Expiry || 'Unknown'); // Handle missing Expiry
-            const values1 = data.map(row => (row.PNL !== undefined && row.PNL !== null ? row.PNL : 0)); // Handle missing PNL
-            const values2 = data.map(row => (row.TotalPNL !== undefined && row.TotalPNL !== null ? row.TotalPNL : 0)); // Handle missing TotalPNL
+            const values1 = data.map(row => (row.PNLCE !== undefined && row.PNLCE !== null ? row.PNLCE : 0)); // Handle missing PNL
+            const values2 = data.map(row => (row.PNLPE !== undefined && row.PNLPE !== null ? row.PNLPE : 0)); // Handle missing TotalPNL
 
             // Bar Chart
             new Chart(document.getElementById('barChart').getContext('2d'), {
