@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chart Viewer</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -23,28 +24,24 @@
 </head>
 <body>
     <h1>Chart Viewer</h1>
-    <p>View charts generated from your database via GitHub.</p>
+    <p>View charts generated from your data source.</p>
     <canvas id="barChart"></canvas>
     <canvas id="lineChart"></canvas>
+
     <script>
-        // GitHub repository details
-        const GITHUB_RAW_URL = 'https://raw.githubusercontent.com/SagarTarsariya/Charts/main/data.json';
-
-        // Chart instances
-        let barChart, lineChart;
-
-        // Function to fetch and parse data from GitHub
+        // Function to fetch and parse CSV data
         async function loadData() {
             try {
-                const response = await fetch(GITHUB_RAW_URL, { cache: 'no-store' });
-                if (!response.ok) throw new Error(`Failed to load data: ${response.status} - ${response.statusText}`);
-                const data = await response.json();
-                if (!Array.isArray(data)) throw new Error('Invalid data format');
-                return data.map(row => ({
-                    Expiry: row.Expiry,
-                    PNLCE: row.PNLCE !== null ? row.PNLCE : 0,
-                    PNLPE: row.PNLPE !== null ? row.PNLPE : 0
-                }));
+                const response = await fetch('ATR_Buying_Strategy.csv'); // Ensure exact filename match
+                if (!response.ok) {
+                    throw new Error(`Failed to load ATR_Buying_Strategy.csv. Status: ${response.status}`);
+                }
+                const text = await response.text();
+                const result = Papa.parse(text, { header: true, dynamicTyping: true, skipEmptyLines: true });
+                if (result.errors.length > 0) {
+                    throw new Error('CSV parsing error: ' + result.errors.map(e => e.message).join(', '));
+                }
+                return result.data;
             } catch (error) {
                 console.error('Error loading data:', error);
                 alert('Error loading data. ' + error.message);
@@ -52,31 +49,18 @@
             }
         }
 
-        // Function to format date as dd-mm-yyyy
-        function formatDate(dateString) {
-            const date = new Date(dateString);
-            const day = String(date.getDate()).padStart(2, '0');
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const year = date.getFullYear();
-            return `${day}-${month}-${year}`;
-        }
-
-        // Function to create or update charts
-        async function updateCharts() {
+        // Function to create charts
+        async function createCharts() {
             const data = await loadData();
             if (data.length === 0) return;
 
-            // Format the date labels
-            const labels = data.map(row => formatDate(row.Expiry));
-            const values1 = data.map(row => row.PNLCE);
-            const values2 = data.map(row => row.PNLPE);
-
-            // Destroy existing charts to prevent memory leaks
-            if (barChart) barChart.destroy();
-            if (lineChart) lineChart.destroy();
+            // Use column names from your CSV (verify these match exactly)
+            const labels = data.map(row => row.Expiry || 'Unknown'); // Handle missing Expiry
+            const values1 = data.map(row => (row.PNLCE !== undefined && row.PNLCE !== null ? row.PNLCE : 0)); // Handle missing PNL
+            const values2 = data.map(row => (row.PNLPE !== undefined && row.PNLPE !== null ? row.PNLPE : 0)); // Handle missing TotalPNL
 
             // Bar Chart
-            barChart = new Chart(document.getElementById('barChart').getContext('2d'), {
+            new Chart(document.getElementById('barChart').getContext('2d'), {
                 type: 'bar',
                 data: {
                     labels: labels,
@@ -90,12 +74,16 @@
                 },
                 options: {
                     scales: { y: { beginAtZero: true } },
-                    responsive: true
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'top' },
+                        tooltip: { mode: 'index', intersect: false }
+                    }
                 }
             });
 
             // Line Chart
-            lineChart = new Chart(document.getElementById('lineChart').getContext('2d'), {
+            new Chart(document.getElementById('lineChart').getContext('2d'), {
                 type: 'line',
                 data: {
                     labels: labels,
@@ -109,14 +97,17 @@
                 },
                 options: {
                     scales: { y: { beginAtZero: true } },
-                    responsive: true
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'top' },
+                        tooltip: { mode: 'index', intersect: false }
+                    }
                 }
             });
         }
 
-        // Initialize charts and refresh every 5 minutes
-        updateCharts();
-        setInterval(updateCharts, 5 * 60 * 1000);
+        // Initialize charts
+        createCharts();
     </script>
 </body>
 </html>
