@@ -23,29 +23,24 @@
 </head>
 <body>
     <h1>Chart Viewer</h1>
-    <p>View charts generated from your database via GitHub.</p>
+    <p>View charts generated from your database.</p>
     <canvas id="barChart"></canvas>
     <canvas id="lineChart"></canvas>
-    <canvas id="strikeChart"></canvas>
     <script>
-        // GitHub repository details
-        const GITHUB_RAW_URL = 'https://raw.githubusercontent.com/SagarTarsariya/Charts/main/data.json';
-
         // Chart instances
-        let barChart, lineChart, strikeChart;
+        let barChart, lineChart;
 
-        // Function to fetch and parse data from GitHub
+        // Function to fetch and parse data from Flask endpoint
         async function loadData() {
             try {
-                const response = await fetch(GITHUB_RAW_URL, { cache: 'no-store' });
+                const response = await fetch('http://localhost:5100/data', { mode: 'cors' });
                 if (!response.ok) throw new Error(`Failed to load data: ${response.status} - ${response.statusText}`);
                 const data = await response.json();
-                if (!Array.isArray(data)) throw new Error('Invalid data format');
+                if (data.error) throw new Error(data.error);
                 return data.map(row => ({
                     Expiry: row.Expiry,
-                    PNL: row.PNL !== null ? row.PNL : 0,
-                    TotalPNL: row.TotalPNL !== null ? row.TotalPNL : 0,
-                    StrikePrice: row.StrikePrice !== null ? row.StrikePrice : 0
+                    PNLCE: row.PNLCE !== null ? row.PNLCE : 0,
+                    PNLPE: row.PNLPE !== null ? row.PNLPE : 0
                 }));
             } catch (error) {
                 console.error('Error loading data:', error);
@@ -70,14 +65,12 @@
 
             // Format the date labels
             const labels = data.map(row => formatDate(row.Expiry));
-            const values1 = data.map(row => row.PNL);
-            const values2 = data.map(row => row.TotalPNL);
-            const values3 = data.map(row => row.StrikePrice);
+            const values1 = data.map(row => row.PNLCE);
+            const values2 = data.map(row => row.PNLPE);
 
             // Destroy existing charts to prevent memory leaks
             if (barChart) barChart.destroy();
             if (lineChart) lineChart.destroy();
-            if (strikeChart) strikeChart.destroy();
 
             // Bar Chart
             barChart = new Chart(document.getElementById('barChart').getContext('2d'), {
@@ -85,7 +78,7 @@
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: 'PNL',
+                        label: 'PNLCE',
                         data: values1,
                         backgroundColor: 'rgba(54, 162, 235, 0.5)',
                         borderColor: 'rgba(54, 162, 235, 1)',
@@ -104,29 +97,10 @@
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: 'TotalPNL',
+                        label: 'PNLPE',
                         data: values2,
                         borderColor: 'rgba(255, 99, 132, 1)',
                         backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                        fill: true
-                    }]
-                },
-                options: {
-                    scales: { y: { beginAtZero: true } },
-                    responsive: true
-                }
-            });
-
-            // New Strike Price Chart
-            strikeChart = new Chart(document.getElementById('strikeChart').getContext('2d'), {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Strike Price',
-                        data: values3,
-                        borderColor: 'rgba(75, 192, 192, 1)',
-                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
                         fill: true
                     }]
                 },
@@ -140,11 +114,6 @@
         // Initialize charts and refresh every 5 minutes
         updateCharts();
         setInterval(updateCharts, 5 * 60 * 1000);
-
-        // After modifying this file in VS Code, commit and push to GitHub:
-        // git add index.html
-        // git commit -m "Add StrikePrice chart"
-        // git push origin main
     </script>
 </body>
 </html>
