@@ -23,20 +23,23 @@
 </head>
 <body>
     <h1>Chart Viewer</h1>
-    <p>View charts generated from your database.</p>
+    <p>View charts generated from your database via GitHub.</p>
     <canvas id="barChart"></canvas>
     <canvas id="lineChart"></canvas>
     <script>
+        // GitHub repository details
+        const GITHUB_RAW_URL = 'https://raw.githubusercontent.com/SagarTarsariya/Charts/main/data.json';
+
         // Chart instances
         let barChart, lineChart;
 
-        // Function to fetch and parse data from Flask endpoint
+        // Function to fetch and parse data from GitHub
         async function loadData() {
             try {
-                const response = await fetch('http://localhost:5100/data', { mode: 'cors' });
+                const response = await fetch(GITHUB_RAW_URL, { cache: 'no-store' });
                 if (!response.ok) throw new Error(`Failed to load data: ${response.status} - ${response.statusText}`);
                 const data = await response.json();
-                if (data.error) throw new Error(data.error);
+                if (!Array.isArray(data)) throw new Error('Invalid data format');
                 return data.map(row => ({
                     Expiry: row.Expiry,
                     PNLCE: row.PNLCE !== null ? row.PNLCE : 0,
